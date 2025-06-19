@@ -276,6 +276,14 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      setCurrentUser(null);
+      setIsAdmin(false);
+      setShowCreateForm(false);
+      setError(null);
+      setLoginError(null);
+      // Limpia cualquier dato sensible del localStorage/sessionStorage si lo usas
+      localStorage.clear();
+      sessionStorage.clear();
     } catch (error) {
       console.error("Logout error:", error);
       setError("Error al cerrar sesión.");
@@ -315,16 +323,18 @@ const App: React.FC = () => {
           />
         )}
 
-        <div className="text-center mb-8">
-            <button
-                onClick={() => setShowCreateForm(!showCreateForm)}
-                aria-expanded={showCreateForm}
-                aria-controls="create-auction-form-section"
-                className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 text-lg"
-            >
-                {showCreateForm ? 'Cancelar Creación de Subasta' : '¡Ofrece una Carta Pokémon!'}
-            </button>
-        </div>
+        {currentUser && (
+          <div className="text-center mb-8">
+              <button
+                  onClick={() => setShowCreateForm(!showCreateForm)}
+                  aria-expanded={showCreateForm}
+                  aria-controls="create-auction-form-section"
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 text-lg"
+              >
+                  {showCreateForm ? 'Cancelar Creación de Subasta' : '¡Ofrece una Carta Pokémon!'}
+              </button>
+          </div>
+        )}
 
         {showCreateForm && (
           <section id="create-auction-form-section" className="mb-10" aria-label="Formulario para Crear Nueva Subasta">

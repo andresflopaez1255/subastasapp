@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NewAuctionData } from '../../types';
 import imageCompression from 'browser-image-compression';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 interface CreateAuctionFormProps {
   onAddAuction: (auctionData: NewAuctionData) => Promise<void>;
@@ -34,6 +37,28 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageProcessingMessage, setImageProcessingMessage] = useState<string | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Obtiene el username del usuario autenticado desde Firestore
+    const fetchUsername = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      console.log("Fetching username for user:", user?.uid);
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        console.log("User document fetched:", userDoc.exists(), userDoc.data());
+        if (userDoc.exists()) {
+          setCurrentUsername(userDoc.data().username || null);
+        } else {
+          setCurrentUsername(null);
+        }
+      } else {
+        setCurrentUsername(null);
+      }
+    };
+    fetchUsername();
+  }, []);
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -87,13 +112,24 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
     setError(null);
     setSuccessMessage(null);
 
-    if (!cardName || !startingBid || !endTime || !sellerName) {
-      setError('Por favor, completa todos los campos obligatorios: Nombre del Vendedor, Nombre de la Carta, Puja Inicial y Fecha/Hora de Finalización.');
+    // Solo permitir si está logueado
+    if (!currentUsername) {
+      setError('Debes iniciar sesión para crear una subasta.');
+      return;
+    }
+
+    if (!cardName || !startingBid || !endTime) {
+      setError('Por favor, completa todos los campos obligatorios: Nombre de la Carta, Puja Inicial y Fecha/Hora de Finalización.');
+      return;
+    }
+
+    if (!imageBase64) {
+      setError('La imagen de la carta es obligatoria.');
       return;
     }
 
     const bid = parseFloat(startingBid);
-    const selectedEndTime = new Date(endTime).getTime(); // Convert datetime-local string to timestamp
+    const selectedEndTime = new Date(endTime).getTime();
 
     if (isNaN(bid) || bid <= 0) {
       setError('La puja inicial debe ser un número positivo.');
@@ -111,7 +147,6 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
       return;
     }
 
-
     setIsSubmitting(true);
     try {
       await onAddAuction({
@@ -119,8 +154,8 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
         imageUrl: imageBase64 || undefined,
         description,
         startingBid: bid,
-        endTime: selectedEndTime, // Pass the timestamp
-        sellerName
+        endTime: selectedEndTime,
+        sellerName: currentUsername // Usar el usuario logueado
       });
       setSuccessMessage('¡Subasta enviada con éxito! Ahora está pendiente de aprobación por un administrador.');
       // Reset form
@@ -149,17 +184,19 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
       {successMessage && <div role="alert" aria-live="polite" className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">{successMessage}</div>}
       <form onSubmit={handleSubmit} className="space-y-6" aria-label="Formulario para crear nueva subasta">
         <div>
-          <label htmlFor="sellerName" className="block text-sm font-medium text-gray-700 mb-1">Nombre del Vendedor <span className="text-red-500">*</span></label>
+          <label htmlFor="sellerName" className="block text-sm font-medium text-gray-700 mb-1">
+            Nombre del Vendedor <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             id="sellerName"
-            value={sellerName}
-            onChange={(e) => setSellerName(e.target.value)}
-            placeholder="ej., AshK"
-            className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500"
+            value={currentUsername || ''}
+            readOnly
+            placeholder="Debes iniciar sesión"
+            className="w-full p-3 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-sm"
             required
             aria-required="true"
-            disabled={isSubmitting}
+            disabled
           />
         </div>
         <div>
@@ -177,7 +214,9 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
           />
         </div>
         <div>
-          <label htmlFor="imageFile" className="block text-sm font-medium text-gray-700 mb-1">Imagen de la Carta (Opcional, máx {MAX_IMAGE_SIZE_MB}MB)</label>
+          <label htmlFor="imageFile" className="block text-sm font-medium text-gray-700 mb-1">
+            Imagen de la Carta <span className="text-red-500">*</span> (máx {MAX_IMAGE_SIZE_MB}MB)
+          </label>
           <input
             type="file"
             id="imageFile"
@@ -186,12 +225,15 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
             className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-yellow-500 focus:border-yellow-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
             disabled={isSubmitting}
             aria-describedby="imageFile-description"
+            required
           />
           {imageProcessingMessage && <p className="text-xs text-blue-600 mt-1">{imageProcessingMessage}</p>}
           {imageBase64 && (
             <img src={imageBase64} alt="Vista previa de la carta" className="image-preview" />
           )}
-           <p className="text-xs text-gray-500 mt-1" id="imageFile-description">Si se deja en blanco o no se elige archivo, se usará una imagen aleatoria. La imagen se comprimirá antes de guardarse.</p>
+          <p className="text-xs text-gray-500 mt-1" id="imageFile-description">
+            Debes subir una imagen de la carta. La imagen se comprimirá antes de guardarse.
+          </p>
         </div>
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Descripción (Opcional)</label>
@@ -243,7 +285,11 @@ export const CreateAuctionForm: React.FC<CreateAuctionFormProps> = ({ onAddAucti
         </div>
         <button
           type="submit"
-          disabled={isSubmitting || !!imageProcessingMessage && imageProcessingMessage.includes("Comprimiendo")}
+          disabled={
+            isSubmitting ||
+            !!imageProcessingMessage && imageProcessingMessage.includes("Comprimiendo") ||
+            !currentUsername
+          }
           className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
