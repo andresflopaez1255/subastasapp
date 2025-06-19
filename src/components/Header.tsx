@@ -2,7 +2,7 @@
 import React from 'react';
 import { PokemonBallIcon } from './icons/PokemonBallIcon';
 import { APP_TITLE } from '../../constants';
-import type { User } from 'https://esm.sh/firebase@10.12.2/auth'; // Import User type
+import type { User } from 'firebase/auth'; // Import User type from npm package
 
 interface HeaderProps {
   currentUser: User | null;
@@ -11,7 +11,9 @@ interface HeaderProps {
   onOpenLoginModal: () => void;
 }
 
+
 export const Header: React.FC<HeaderProps> = ({ currentUser, isAdmin, onLogout, onOpenLoginModal }) => {
+  console.log("Header rendered with currentUser:", currentUser, "isAdmin:", isAdmin);
   return (
     <header className="bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500 text-white shadow-lg p-4 sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between">
@@ -20,9 +22,9 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, isAdmin, onLogout, 
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{APP_TITLE}</h1>
         </div>
         <div className="flex items-center space-x-3">
-          {currentUser && isAdmin ? (
+          {currentUser  ? (
             <>
-              <span className="text-sm hidden sm:inline">Admin: {currentUser.email}</span>
+              <span className="text-sm hidden sm:inline"> {isAdmin ? "Admin:" : "Usuario:"} {currentUser.email}</span>
               <button
                 onClick={onLogout}
                 className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm text-sm transition-colors"
@@ -35,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, isAdmin, onLogout, 
               onClick={onOpenLoginModal}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm text-sm transition-colors"
             >
-              Iniciar Sesión (Admin)
+              Iniciar Sesión
             </button>
           )}
         </div>

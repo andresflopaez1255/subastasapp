@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Header } from './components/Header';
-import { Footer } from './components/Footer';
-import { CreateAuctionForm } from './components/CreateAuctionForm';
-import { AuctionList } from './components/AuctionList';
-import { AdminControls } from './components/AdminControls'; 
-import { LoginModal } from './components/LoginModal';
+import { Header } from './src/components/Header';
+import { Footer } from './src/components/Footer';
+import { CreateAuctionForm } from './src/components/CreateAuctionForm';
+import { AuctionList } from './src/components/AuctionList';
+import { AdminControls } from './src/components/AdminControls'; 
+import { LoginModal } from './src/components/LoginModal';
 import { AuctionItem, NewAuctionData, Bid } from './types';
 import { db, auth, ADMIN_UID } from './firebase'; 
 import { 
@@ -15,16 +15,17 @@ import {
   updateDoc, 
   arrayUnion, 
   query, 
-  orderBy,
   where, 
-  getDoc
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 // Firebase Storage functions are no longer needed here
 import { 
   type User, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  signOut 
+  signOut,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 
 const App: React.FC = () => {
@@ -220,16 +221,54 @@ const App: React.FC = () => {
     setLoginError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (userCredential.user.uid !== ADMIN_UID) {
-        setLoginError("Acceso denegado. Este usuario no es un administrador.");
-        await signOut(auth); 
+      if (!userCredential.user) {
+        setLoginError("No se pudo autenticar al usuario.");
+        return;
       }
+    
+      setCurrentUser(userCredential.user);
+      setIsAdmin(userCredential.user.uid === ADMIN_UID);
+      setShowLoginModal(false);
+      setLoginError(null);
+     
     } catch (error: any) {
       console.error("Login error:", error);
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         setLoginError("Correo electrónico o contraseña incorrectos.");
       } else {
         setLoginError("Error al iniciar sesión. Inténtalo de nuevo.");
+      }
+    }
+  };
+
+  const handleRegister = async (username: string, email: string, password: string) => {
+    setLoginError(null);
+    try {
+      // Verifica si el usuario ya existe por username
+      const usernameDoc = await getDoc(doc(db, "usernames", username));
+      if (usernameDoc.exists()) {
+        setLoginError("El nombre de usuario ya está en uso.");
+        return;
+      }
+      // Crea el usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Guarda el username en Firestore
+      await setDoc(doc(db, "usernames", username), {
+        uid: userCredential.user.uid,
+        email: email
+      });
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        username,
+        email
+      });
+    } catch (error: any) {
+      console.error("Register error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        setLoginError("El correo electrónico ya está en uso.");
+      } else if (error.code === 'auth/weak-password') {
+        setLoginError("La contraseña es demasiado débil.");
+      } else {
+        setLoginError("Error al registrarse. Inténtalo de nuevo.");
       }
     }
   };
@@ -324,6 +363,7 @@ const App: React.FC = () => {
             setLoginError(null);
         }}
         onLogin={handleLogin}
+        onRegister={handleRegister}
         loginError={loginError}
       />
     </div>

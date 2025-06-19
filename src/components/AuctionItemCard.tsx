@@ -1,14 +1,17 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { AuctionItem, Bid } from '../types';
-import { DEFAULT_IMAGE_URL } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { AuctionItem } from '../../types';
+import { DEFAULT_IMAGE_URL } from '../../constants';
 import { PokemonBallIcon } from './icons/PokemonBallIcon';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 interface AuctionItemCardProps {
   item: AuctionItem;
   onPlaceBid?: (auctionId: string, bidAmount: number, bidderName: string) => Promise<boolean>; 
   onApprove?: (auctionId: string) => Promise<void>;
   onReject?: (auctionId: string) => Promise<void>;
+ 
 }
 
 const formatTimeRemaining = (endTime: number): string => {
@@ -39,8 +42,10 @@ const formatEndTime = (timestamp: number): string => {
 
 export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceBid, onApprove, onReject }) => {
   const [bidAmount, setBidAmount] = useState('');
-  const [bidderName, setBidderName] = useState('');
+  // Elimina el estado local de bidderName
+  // const [bidderName, setBidderName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   
   const isApprovedAndActive = item.status === 'approved' && item.endTime > Date.now();
   const [timeRemaining, setTimeRemaining] = useState(
@@ -71,6 +76,24 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
     }
   }, [item.endTime, item.status]);
 
+  useEffect(() => {
+    // Obtiene el username del usuario autenticado desde Firestore
+    const fetchUsername = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setCurrentUsername(userDoc.data().username || null);
+        } else {
+          setCurrentUsername(null);
+        }
+      } else {
+        setCurrentUsername(null);
+      }
+    };
+    fetchUsername();
+  }, []);
 
   const handleBidSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +104,17 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
         setError("Esta subasta no está activa o ha terminado.");
         return;
     }
-    if (!bidderName.trim()) {
-        setError("Por favor, ingresa tu nombre para pujar.");
+    if (!currentUsername || !currentUsername.trim()) {
+        setError("Debes iniciar sesión para pujar.");
         return;
+    }
+    // Impide dos pujas seguidas del mismo usuario
+    if (
+      item.bids.length > 0 &&
+      item.bids[item.bids.length - 1].bidderName === currentUsername
+    ) {
+      setError("No puedes realizar dos pujas seguidas. Espera a que otro usuario puje.");
+      return;
     }
     const amount = parseFloat(bidAmount);
     if (isNaN(amount) || amount <= item.currentBid) {
@@ -96,16 +127,14 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
     }
     
     setIsProcessingAction(true);
-    const success = await onPlaceBid(item.id, amount, bidderName.trim());
+    const success = await onPlaceBid(item.id, amount, currentUsername.trim());
     setIsProcessingAction(false);
 
     if (success) {
       setBidAmount('');
-      // Bidder name can be kept or cleared based on preference. Let's clear it for now.
-      // setBidderName(''); 
       setError(null); 
     } else {
-      if(isAuctionLive) { // Only show specific error if auction was supposed to be biddable
+      if(isAuctionLive) {
           setError('No se pudo realizar la puja. Podría ser demasiado baja, la subasta acaba de terminar o hubo un problema de red.');
       }
     }
@@ -230,20 +259,7 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
 
             {item.status === 'approved' && isAuctionLive && onPlaceBid && (
               <form onSubmit={handleBidSubmit} className="space-y-3" aria-label={`Realizar puja por ${item.cardName}`}>
-                  <div>
-                  <label htmlFor={uniqueBidderNameId} className="block text-xs font-medium text-gray-700">Tu Nombre</label>
-                  <input
-                      type="text"
-                      id={uniqueBidderNameId}
-                      value={bidderName}
-                      onChange={(e) => setBidderName(e.target.value)}
-                      placeholder="Ingresa tu nombre"
-                      className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      required
-                      aria-required="true"
-                      disabled={isProcessingAction}
-                  />
-                  </div>
+                 
                   <div>
                   <label htmlFor={uniqueBidAmountId} className="block text-xs font-medium text-gray-700">Tu Puja ($)</label>
                   <input

@@ -23,7 +23,8 @@ export const AuctionList: React.FC<AuctionListProps> = ({ auctions, onPlaceBid }
         <h2 className="text-3xl font-bold mb-8 text-gray-800 border-b-2 border-blue-500 pb-2">Subastas Actuales</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
         {auctions.map(item => (
-            <AuctionItemCard key={item.id} item={item} onPlaceBid={onPlaceBid} />
+            <AuctionItemCard
+             key={item.id} item={item} onPlaceBid={onPlaceBid} />
         ))}
         </div>
     </div>
