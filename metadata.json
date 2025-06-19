@@ -1,0 +1,7 @@
+
+{
+  "name": "Subastas de Cartas Pokémon",
+  "description": "Una aplicación web para organizar y participar en subastas de cartas Pokémon. Los usuarios pueden registrar subastas para sus cartas y otros usuarios pueden realizar pujas.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
