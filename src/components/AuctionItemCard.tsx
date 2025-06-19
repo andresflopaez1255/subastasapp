@@ -95,6 +95,14 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
     fetchUsername();
   }, []);
 
+  // Calcula el incremento mínimo de la puja según el valor actual
+  const getMinBidIncrement = (current: number) => {
+    if (current >= 1000) return 500;
+    if (current >= 100) return 50;
+    if (current >= 10) return 5;
+    return 1;
+  };
+
   const handleBidSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -117,8 +125,11 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
       return;
     }
     const amount = parseFloat(bidAmount);
-    if (isNaN(amount) || amount <= item.currentBid) {
-      setError(`Tu puja debe ser mayor que la puja actual de $${item.currentBid.toFixed(2)}.`);
+    const minIncrement = getMinBidIncrement(item.currentBid);
+    const minBid = item.currentBid + minIncrement;
+
+    if (isNaN(amount) || amount < minBid) {
+      setError(`Tu puja debe ser al menos $${minBid.toLocaleString()} (${minIncrement.toLocaleString()} más que la puja actual).`);
       return;
     }
     if (amount <= 0) {
@@ -267,9 +278,9 @@ export const AuctionItemCard: React.FC<AuctionItemCardProps> = ({ item, onPlaceB
                       id={uniqueBidAmountId}
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
-                      placeholder={`> $${item.currentBid.toFixed(2)}`}
-                      min={(item.currentBid + 0.01).toFixed(2)}
-                      step="0.01"
+                      placeholder={`≥ $${(item.currentBid + getMinBidIncrement(item.currentBid)).toLocaleString()}`}
+                      min={item.currentBid + getMinBidIncrement(item.currentBid)}
+                      step={getMinBidIncrement(item.currentBid)}
                       className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                       required
                       aria-required="true"
