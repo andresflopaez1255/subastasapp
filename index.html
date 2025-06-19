@@ -1,25 +1,65 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PokéBid: Subastas de Cartas Pokémon</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.1.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+        "react/": "https://esm.sh/react@^19.1.0/",
+        "browser-image-compression": "https://esm.sh/browser-image-compression@2.0.2",
+        "firebase/storage": "https://esm.sh/firebase@10.12.2/storage",
+        "firebase/": "https://esm.sh/firebase@^11.9.1/"
+      }
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%23fff%22 stroke=%22%23222%22 stroke-width=%224%22/><path d=%22M50,2 A48,48 0 0,1 50,98%22 fill=%22%23f44336%22/><line x1=%222%22 y1=%2250%22 x2=%2298%22 y2=%2250%22 stroke=%22%23222%22 stroke-width=%224%22/><circle cx=%2250%22 cy=%2250%22 r=%2218%22 fill=%22%23fff%22 stroke=%22%23222%22 stroke-width=%224%22/><circle cx=%2250%22 cy=%2250%22 r=%2210%22 fill=%22%23fff%22 stroke=%22%23222%22 stroke-width=%223%22/></svg>">
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "react": "https://esm.sh/react@^19.1.0",
-    "firebase/auth": "https://esm.sh/firebase@10.12.2/auth",
-    "firebase/": "https://esm.sh/firebase@^11.9.1/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .bg-gray-100 {
+      background-color: #f7fafc;
+      background-image: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    *:focus-visible {
+      outline: 3px solid #3b82f6 !important;
+      outline-offset: 2px !important;
+    }
+    .image-preview {
+      width: 150px;
+      height: 210px;
+      object-fit: contain;
+      border: 1px solid #ddd;
+      border-radius: 0.375rem;
+      margin-top: 0.5rem;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-gray-100">
+<body>
+  <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

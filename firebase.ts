@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBfkKdArJkNVbEePdh5LXbbPXRYeh-LDXU",
   authDomain: "subastas-shinsei.firebaseapp.com",
   projectId: "subastas-shinsei",
-  storageBucket: "subastas-shinsei.firebasestorage.app",
+  storageBucket: "subastas-shinsei.appspot.com", 
   messagingSenderId: "834761225537",
   appId: "1:834761225537:web:8c355fcf06b0af48701dc0",
   measurementId: "G-QX3P2K47QV"

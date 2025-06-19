@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -7,7 +6,7 @@ import { AuctionList } from './components/AuctionList';
 import { AdminControls } from './components/AdminControls'; 
 import { LoginModal } from './components/LoginModal';
 import { AuctionItem, NewAuctionData, Bid } from './types';
-import { db, auth, ADMIN_UID } from './firebase'; // Import auth and ADMIN_UID
+import { db, auth, ADMIN_UID } from './firebase'; 
 import { 
   collection, 
   addDoc, 
@@ -20,12 +19,13 @@ import {
   where, 
   getDoc
 } from 'firebase/firestore';
+// Firebase Storage functions are no longer needed here
 import { 
   type User, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   signOut 
-} from 'firebase/auth'; // Firebase Auth functions
+} from 'firebase/auth';
 
 const App: React.FC = () => {
   const [approvedAuctions, setApprovedAuctions] = useState<AuctionItem[]>([]);
@@ -35,20 +35,18 @@ const App: React.FC = () => {
   const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Auth state
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Listener for Firebase Auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setIsAdmin(user?.uid === ADMIN_UID);
       setIsAuthLoading(false);
-      if(user && user.uid === ADMIN_UID) { // Close modal on successful admin login
+      if(user && user.uid === ADMIN_UID) { 
         setShowLoginModal(false);
         setLoginError(null);
       }
@@ -56,7 +54,6 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch approved auctions (for everyone)
   useEffect(() => {
     setIsLoadingApproved(true);
     setError(null);
@@ -70,7 +67,7 @@ const App: React.FC = () => {
         auctionsData.push({ 
             id: doc.id, 
             ...data,
-            endTime: data.endTime?.toMillis ? data.endTime.toMillis() : (data.endTime || 0), // Handle Firebase Timestamp
+            endTime: data.endTime?.toMillis ? data.endTime.toMillis() : (data.endTime || 0),
             bids: data.bids || [],
             currentBid: data.currentBid || data.startingBid || 0,
             startingBid: data.startingBid || 0,
@@ -88,7 +85,6 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch pending auctions (only if admin)
   useEffect(() => {
     if (!isAdmin) {
       setPendingAuctions([]); 
@@ -106,7 +102,7 @@ const App: React.FC = () => {
         auctionsData.push({
              id: doc.id,
              ...data,
-             endTime: data.endTime?.toMillis ? data.endTime.toMillis() : (data.endTime || 0), // Handle Firebase Timestamp
+             endTime: data.endTime?.toMillis ? data.endTime.toMillis() : (data.endTime || 0),
              bids: data.bids || [],
              currentBid: data.currentBid || data.startingBid || 0,
              startingBid: data.startingBid || 0,
@@ -122,7 +118,7 @@ const App: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [isAdmin]); // Re-fetch if isAdmin status changes
+  }, [isAdmin]);
 
 
   const sortedApprovedAuctions = React.useMemo(() => {
@@ -139,18 +135,20 @@ const App: React.FC = () => {
 
   const handleAddAuction = useCallback(async (auctionData: NewAuctionData) => {
     setError(null);
-    const newAuctionDocData = {
-      cardName: auctionData.cardName,
-      imageUrl: auctionData.imageUrl,
-      description: auctionData.description,
-      startingBid: auctionData.startingBid,
-      currentBid: auctionData.startingBid,
-      endTime: Date.now() + auctionData.auctionDurationHours * 3600 * 1000,
-      bids: [],
-      sellerName: auctionData.sellerName,
-      status: 'pending', 
-    };
+    
     try {
+      const newAuctionDocData = {
+        cardName: auctionData.cardName,
+        imageUrl: auctionData.imageUrl || '', // Use the base64 Data URL or empty string
+        description: auctionData.description,
+        startingBid: auctionData.startingBid,
+        currentBid: auctionData.startingBid,
+        endTime: auctionData.endTime, // Use the timestamp provided by the form
+        bids: [],
+        sellerName: auctionData.sellerName,
+        status: 'pending', 
+      };
+
       await addDoc(collection(db, "auctions"), newAuctionDocData);
       setShowCreateForm(false); 
     } catch (err) {
@@ -224,9 +222,7 @@ const App: React.FC = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (userCredential.user.uid !== ADMIN_UID) {
         setLoginError("Acceso denegado. Este usuario no es un administrador.");
-        await signOut(auth); // Sign out non-admin user
-      } else {
-        // Auth state listener will handle setting isAdmin and closing modal
+        await signOut(auth); 
       }
     } catch (error: any) {
       console.error("Login error:", error);
@@ -241,7 +237,6 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // Auth state listener will handle setting currentUser and isAdmin
     } catch (error) {
       console.error("Logout error:", error);
       setError("Error al cerrar sesión.");

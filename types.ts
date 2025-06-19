@@ -1,4 +1,3 @@
-
 export interface Bid {
   amount: number;
   bidderName: string; // Simplified, no full user system
@@ -8,7 +7,7 @@ export interface Bid {
 export interface AuctionItem {
   id: string;
   cardName: string;
-  imageUrl: string;
+  imageUrl: string; // This will store the base64 Data URL or be empty for default
   description: string;
   startingBid: number;
   currentBid: number;
@@ -21,9 +20,9 @@ export interface AuctionItem {
 
 export interface NewAuctionData {
   cardName: string;
-  imageUrl: string;
+  imageUrl?: string; // Will hold the base64 Data URL, or be undefined/empty
   description: string;
   startingBid: number;
-  auctionDurationHours: number; // Duration in hours
+  endTime: number; // Timestamp for when the auction ends
   sellerName: string;
 }
